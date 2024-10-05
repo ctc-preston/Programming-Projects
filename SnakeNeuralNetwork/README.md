@@ -3,7 +3,7 @@ About:
 This program simulates the popular action video game snake using the KarelJRobot library as the UI and trains a neural network model through evolution to play the game.
 
 How to run:
-To run the runnable jar file, it must be run through the command line with java installed.
+To run the runnable jar file, it must be run through the command line with java installed. Alternatively, you can download and run the java files on your own java compiler, if so, you must run the runner class. You can also run the play class to play the snake game by yourself.
 
 What happens when running:
 When running the program, it will initially start training the neural network using the predetermined parameters set in the code of the runner class. It will display a percent number indicating its progress training. When it reaches 100%, a screen will pop up. Then the the program will dispaly some information on the consol. It will ask for what generation you wish to view and then how many steps it will run for (recommended to enter the total number of steps it has ran for). Then it will ask for a final enter to continue and then the user must switch back to the display screen. It will show the best neural network in that generation playing snake. When it is over the program will go back to asking for the next generation you wish to view.
