@@ -1,0 +1,326 @@
+from browser import timer
+import random
+import math
+
+GRAVITY_X = 0
+GRAVITY_Y = -100
+fps = 60
+
+object_list = []
+colors = [Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.BLUE, Color.PURPLE, Color.CYAN, Color.BLACK, Color.GRAY]
+
+class Motion_circle:
+    def __init__(self, circ, velocityX, velocityY):
+        self.circ = circ
+        self.velocityX = velocityX
+        self.velocityY = velocityY
+        self.startX = circ.get_x()
+        self.startY = circ.get_y()
+        self.timeX = 0
+        self.timeY = 0
+        self.recently_collided = []
+        self.recently_bounced = [0, 0, 0, 0]
+        
+    def get_object(self):
+        return self.circ
+        
+    def elapse_time(self):
+        self.timeX += 2
+        self.timeY += 2
+        
+    def reset_timeX(self):
+        self.timeX = 0
+        
+    def reset_timeY(self):
+        self.timeY = 0
+        
+    def get_radius(self):
+        return self.circ.get_radius()
+        
+    def get_x(self):
+        return self.circ.get_x()
+        
+    def get_y(self):
+        return self.circ.get_y()
+        
+    def add_collided(self, obj):
+        self.recently_collided.append(obj)
+        
+    def remove_collided(self, obj):
+        self.recently_collided.remove(obj)
+
+def get_new_position(motion_obj):
+    timeX = motion_obj.timeX / fps
+    timeY = motion_obj.timeY / fps
+    
+    positionX = motion_obj.startX + motion_obj.velocityX * timeX + (1 / 2) * GRAVITY_X * timeX * timeX
+    
+    positionY = motion_obj.startY - motion_obj.velocityY * timeY - (1 / 2) * GRAVITY_Y * timeY * timeY
+    
+    
+    
+    if positionX - motion_obj.get_radius() <= 0:
+        
+        motion_obj.recently_bounced[0] += 1
+        
+        if motion_obj.recently_bounced[0] <= 5:
+            motion_obj.velocityX = -(motion_obj.velocityX + GRAVITY_X * timeX)
+            motion_obj.reset_timeX()
+            motion_obj.startX = positionX
+        else:
+            if motion_obj.velocityX < 0:
+                motion_obj.velocityX *= -1
+            motion_obj.reset_timeX()
+            motion_obj.startX = motion_obj.get_radius() + 1
+    elif motion_obj.recently_bounced[0] > 0:
+        motion_obj.recently_bounced[0] -= 1
+        
+    
+    
+    if positionX + motion_obj.get_radius() >= get_width():
+        
+        motion_obj.recently_bounced[1] += 1
+        
+        if motion_obj.recently_bounced[1] <= 5:
+            motion_obj.velocityX = -(motion_obj.velocityX + GRAVITY_X * timeX)
+            motion_obj.reset_timeX()
+            motion_obj.startX = positionX
+        else:
+            if motion_obj.velocityX > 0:
+                motion_obj.velocityX *= -1
+            motion_obj.reset_timeX()
+            motion_obj.startX = get_width() - motion_obj.get_radius() - 1
+    elif motion_obj.recently_bounced[1] > 0:
+        motion_obj.recently_bounced[1] -= 1
+    
+    
+    
+    if positionY - motion_obj.get_radius() <= 0:
+        
+        motion_obj.recently_bounced[2] += 1
+        
+        if motion_obj.recently_bounced[2] <= 5:
+            motion_obj.velocityY = -(motion_obj.velocityY + GRAVITY_Y * timeY)
+            motion_obj.reset_timeY()
+            motion_obj.startY = positionY
+        else:
+            if motion_obj.velocityY > 0:
+                motion_obj.velocityY *= -1
+            motion_obj.reset_timeY()
+            motion_obj.startY = motion_obj.get_radius() + 1
+    elif motion_obj.recently_bounced[2] > 0:
+        motion_obj.recently_bounced[2] -= 1
+    
+    
+    
+    if positionY + motion_obj.get_radius() >= get_height():
+        
+        motion_obj.recently_bounced[3] += 1
+        
+        if motion_obj.recently_bounced[3] <= 5:
+            motion_obj.velocityY = -(motion_obj.velocityY + GRAVITY_Y * timeY)
+            motion_obj.reset_timeY()
+            motion_obj.startY = positionY
+        else:
+            if motion_obj.velocityY < 0:
+                motion_obj.velocityY *= -1
+            motion_obj.reset_timeY()
+            motion_obj.startY = get_height() - motion_obj.get_radius() - 1
+    elif motion_obj.recently_bounced[3] > 0:
+        motion_obj.recently_bounced[3] -= 1
+    
+    
+    motion_obj.get_object().set_position(positionX, positionY)
+    motion_obj.elapse_time()
+    
+    
+def update_collisions(obj):
+    # important links
+    # https://en.wikipedia.org/wiki/Elastic_collision
+    # https://williamecraver.wixsite.com/elastic-equations
+    
+    for other_obj in object_list:
+        if obj == other_obj:
+            continue
+        
+        x1 = obj.get_x()
+        y1 = obj.get_y()
+        rad1 = obj.get_radius()
+        
+        x2 = other_obj.get_x()
+        y2 = other_obj.get_y()
+        rad2 = other_obj.get_radius()
+        
+        a = x2 - x1
+        b = y1 - y2
+        c = rad1 + rad2
+        
+        if a * a + b * b > c * c:
+            if other_obj in obj.recently_collided:
+                obj.remove_collided(other_obj)
+                other_obj.remove_collided(obj)
+            continue
+        
+        if other_obj in obj.recently_collided:
+            continue
+        
+        obj.add_collided(other_obj)
+        other_obj.add_collided(obj)
+        
+        
+        # old velocities
+        obj1VX = obj.velocityX + GRAVITY_X * (obj.timeX / fps)
+        obj1VY = obj.velocityY + GRAVITY_Y * (obj.timeY / fps)
+        
+        obj2VX = other_obj.velocityX + GRAVITY_X * (other_obj.timeX / fps)
+        obj2VY = other_obj.velocityY + GRAVITY_Y * (other_obj.timeY / fps)
+        
+        v1 = math.sqrt(obj1VX * obj1VX + obj1VY * obj1VY)
+        v2 = math.sqrt(obj2VX * obj2VX + obj2VY * obj2VY)
+        
+        pi = math.pi
+        half_pi = pi / 2
+        
+        if obj1VX != 0:
+            theta1 = math.atan(obj1VY / obj1VX)
+            if obj1VX < 0:
+                theta1 += pi
+        else:
+            theta1 = half_pi
+            if obj1VY < 0:
+                theta1 *= -1
+        
+        if obj2VX != 0:
+            theta2 = math.atan(obj2VY / obj2VX)
+            if obj2VX < 0:
+                theta2 += pi
+        else:
+            theta2 = half_pi
+            if obj2VY < 0:
+                theta2 *= -1
+        
+        if a != 0:
+            phi = math.atan(b / a)
+            if a < 0:
+                phi += pi
+        else:
+            phi = half_pi
+            if b < 0:
+                phi *= -1
+        
+        # new velocities
+        n1 = math.cos(theta1 - phi)
+        n2 = math.cos(theta2 - phi)
+        
+        n3 = math.cos(phi)
+        n4 = math.sin(phi)
+        
+        
+        n5 = math.cos(phi + half_pi)
+        n6 = math.sin(phi + half_pi)
+        
+        m1 = rad1 * rad1 * pi
+        m2 = rad2 * rad2 * pi
+        
+        dm1 = m1 - m2
+        dm2 = m2 - m1
+        
+        tm = m1 + m2
+        
+        vn1 = v1 * n1
+        vn2 = v2 * n2
+        
+        p1 = (vn1*dm1 + 2*m2*vn2) / tm
+        p2 = v1 * math.sin(theta1 - phi)
+        
+        p3 = (vn2*dm2 + 2*m1*vn1) / tm
+        p4 = v2 * math.sin(theta2 - phi)
+        
+        v1x = p1 * n3 + p2 * n5
+        v1y = p1 * n4 + p2 * n6
+        
+        v2x = p3 * n3 + p4 * n5
+        v2y = p3 * n4 + p4 * n6
+        
+        # v1x = (v1*math.cos(theta1 - phi)*(rad1 - rad2) + 2*rad2*v2*math.cos(theta2 - phi)) * math.cos(phi) / (rad1 + rad2) + v1*math.sin(theta1 - phi)*math.cos(phi + math.pi / 2)
+        # v1y = (v1*math.cos(theta1 - phi)*(rad1 - rad2) + 2*rad2*v2*math.cos(theta2 - phi)) * math.sin(phi) / (rad1 + rad2) + v1*math.sin(theta1 - phi)*math.sin(phi + math.pi / 2)
+        
+        # v2x = (v2*math.cos(theta2 - phi)*(rad2 - rad1) + 2*rad1*v1*math.cos(theta1 - phi)) * math.cos(phi) / (rad1 + rad2) + v2*math.sin(theta2 - phi)*math.cos(phi + math.pi / 2)
+        # v2y = (v2*math.cos(theta2 - phi)*(rad2 - rad1) + 2*rad1*v1*math.cos(theta1 - phi)) * math.sin(phi) / (rad1 + rad2) + v2*math.sin(theta2 - phi)*math.sin(phi + math.pi / 2)
+        
+        obj.reset_timeX()
+        obj.startX = x1
+        obj.velocityX = v1x
+        
+        obj.reset_timeY()
+        obj.startY = y1
+        obj.velocityY = v1y
+        
+        obj.elapse_time()
+        
+        
+        other_obj.reset_timeX()
+        other_obj.startX = x2
+        other_obj.velocityX = v2x
+        
+        other_obj.reset_timeY()
+        other_obj.startY = y2
+        other_obj.velocityY = v2y
+        
+        other_obj.elapse_time()
+
+
+def refresh():
+    for obj in object_list:
+        get_new_position(obj)
+        update_collisions(obj)
+    
+    
+def add_circle(x, y, color, radius, vx, vy):
+    circ = Circle(radius)
+    circ.set_position(x, y)
+    circ.set_color(color)
+    
+    my_circle = Motion_circle(circ, vx, vy)
+    add(circ)
+    object_list.append(my_circle)
+    
+    
+def make_circle(x, y):
+    radius = random.randint(10, 30)
+    
+    if x < radius:
+        radius = random.randint(10, x - 1)
+    elif x > get_width() - radius:
+        radius = random.randint(10, get_width() - x - 1)
+       
+    if y < radius:
+        radius = random.randint(10, y - 1) 
+    elif y > get_height() - radius:
+        radius = random.randint(10, get_height() - y - 1)
+    
+    
+    for motion_obj in object_list:
+        obj = motion_obj.get_object()
+        x2 = obj.get_x()
+        y2 = obj.get_y()
+        rad2 = obj.get_radius()
+        
+        a = x - x2
+        b = y - y2
+        c = radius + rad2 + 2
+        
+        if a * a + b * b <= c * c:
+            return
+    
+    
+    color = random.choice(colors)
+    
+    vx = 100
+    vy = 100
+    
+    add_circle(x, y, color, radius, vx, vy)
+
+add_mouse_click_handler(make_circle)
+
+timer_id = timer.set_interval(refresh, 1000 / fps)
